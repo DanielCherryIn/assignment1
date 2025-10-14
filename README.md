@@ -1,5 +1,10 @@
 # Intelligent Robotics - Assignment 1
 
+## Requirements
+- Ros2
+- Webots
+- webots_ros2 package
+
 ## To run simulation
 - create 'ros2_ws' folder
 - create 'src' folder indside 'ros2_ws'
