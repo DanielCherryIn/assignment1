@@ -63,8 +63,6 @@ TurtleBot3Burger {
     ""
   ]
   extensionSlot [
-    Lidar {
-    }
     Solid {
       name "imu_link"
     }
@@ -83,8 +81,6 @@ TurtleBot3Burger {
     ""
   ]
   extensionSlot [
-    Lidar {
-    }
     Solid {
       name "imu_link"
     }

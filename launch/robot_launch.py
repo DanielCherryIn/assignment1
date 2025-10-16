@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Copyright 1996-2023 Cyberbotics Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +15,7 @@
 # limitations under the License.
 
 """Launch Webots TurtleBot3 Burger driver."""
+
 import os
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
@@ -27,109 +29,169 @@ from launch.actions import IncludeLaunchDescription
 from webots_ros2_driver.webots_launcher import WebotsLauncher
 from webots_ros2_driver.webots_controller import WebotsController
 from webots_ros2_driver.wait_for_controller_connection import WaitForControllerConnection
+import yaml
+import tempfile
+
 
 def generate_launch_description():
     package_dir = get_package_share_directory('assignment1')
     world = LaunchConfiguration('world')
     mode = LaunchConfiguration('mode')
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
+    robot_description_path = os.path.join(package_dir, 'resource', 'turtlebot_webots.urdf')
 
     webots = WebotsLauncher(
         world=PathJoinSubstitution([package_dir, 'worlds', world]),
         mode=mode,
         ros2_supervisor=True
     )
-    robot_state_publisher = Node(
+
+    robot_state_publisher1 = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
+        namespace="robot1",
+        parameters=[{
+            'robot_description': '<robot name=""><link name=""/></robot>'
+        }],
+    )
+    
+    robot_state_publisher2 = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        namespace="robot2",
         parameters=[{
             'robot_description': '<robot name=""><link name=""/></robot>'
         }],
     )
 
-    footprint_publisher = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'base_link', 'base_footprint'],
-    )
     # ROS control spawners
     controller_manager_timeout = ['--controller-manager-timeout', '50']
     controller_manager_prefix = 'python.exe' if os.name == 'nt' else ''
-    
-    diffdrive_controller_spawner = Node(
+    diffdrive_controller_spawner1 = Node(
         package='controller_manager',
         executable='spawner',
         output='screen',
         prefix=controller_manager_prefix,
         arguments=['diffdrive_controller'] + controller_manager_timeout,
+        namespace="robot1"
     )
-    joint_state_broadcaster_spawner = Node(
+    joint_state_broadcaster_spawner1 = Node(
         package='controller_manager',
         executable='spawner',
         output='screen',
         prefix=controller_manager_prefix,
         arguments=['joint_state_broadcaster'] + controller_manager_timeout,
+        namespace="robot1"
     )
-    ros_control_spawners = [diffdrive_controller_spawner, joint_state_broadcaster_spawner]
+    ros_control_spawners1 = [diffdrive_controller_spawner1, joint_state_broadcaster_spawner1]
     
-    robot_description_path = os.path.join(package_dir, 'resource', 'turtlebot_webots.urdf')
+    diffdrive_controller_spawner2 = Node(
+        package='controller_manager',
+        executable='spawner',
+        output='screen',
+        prefix=controller_manager_prefix,
+        arguments=['diffdrive_controller'] + controller_manager_timeout,
+        namespace="robot2"
+    )
+    joint_state_broadcaster_spawner2 = Node(
+        package='controller_manager',
+        executable='spawner',
+        output='screen',
+        prefix=controller_manager_prefix,
+        arguments=['joint_state_broadcaster'] + controller_manager_timeout,
+        namespace="robot2"
+    )
+    ros_control_spawners2 = [diffdrive_controller_spawner2, joint_state_broadcaster_spawner2]
+
     ros2_control_params = os.path.join(package_dir, 'resource', 'ros2control.yml')
+
+    def _create_namespaced_params_file(src, namespace):
+        with open(src, 'r') as f:
+            data = yaml.safe_load(f) or {}
+        namespaced = {}
+        for key, val in data.items():
+            key_name = key.lstrip('/')
+            namespaced[f'/{namespace}/{key_name}'] = val
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.yml', mode='w')
+        yaml.safe_dump(namespaced, tmp)
+        tmp.close()
+        return tmp.name
+
+    ros2_control_params1 = _create_namespaced_params_file(ros2_control_params, 'robot1')
+    ros2_control_params2 = _create_namespaced_params_file(ros2_control_params, 'robot2')
+
     use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy'])
     if use_twist_stamped:
-        mappings_robot1 = [
-            ('diffdrive_controller/cmd_vel', 'robot1/cmd_vel'),
-            ('diffdrive_controller/odom', 'robot1/odom')
-        ]
-        mappings_robot2 = [
-            ('diffdrive_controller/cmd_vel', 'robot2/cmd_vel'),
-            ('diffdrive_controller/odom', 'robot2/odom')
+        mappings = [
+            ('diffdrive_controller/cmd_vel', 'cmd_vel'),
+            ('diffdrive_controller/odom', 'odom')
         ]
     else:
-        mappings_robot1 = [
-            ('diffdrive_controller/cmd_vel_unstamped', 'robot1/cmd_vel'),
-            ('diffdrive_controller/odom', 'robot1/odom')
-        ]
-        mappings_robot2 = [
-            ('diffdrive_controller/cmd_vel_unstamped', 'robot2/cmd_vel'),
-            ('diffdrive_controller/odom', 'robot2/odom')
+        mappings = [
+            ('diffdrive_controller/cmd_vel_unstamped', 'cmd_vel'),
+            ('diffdrive_controller/odom', 'odom')
         ]
 
-    
+    # Add these remappings for robot1
+    robot1_remappings = [
+        ('Robot1/compass/bearing', 'compass/bearing'),
+        ('Robot1/compass/north_vector', 'compass/north_vector'),
+        ('/scan', 'scan'),
+        ('/scan/point_cloud', 'scan/point_cloud')
+        # Add more as needed
+    ] + mappings
+
     turtlebot_driver1 = WebotsController(
         robot_name='Robot1',
         parameters=[
             {'robot_description': robot_description_path,
              'use_sim_time': use_sim_time,
              'set_robot_state_publisher': True},
-            ros2_control_params
+            ros2_control_params1
         ],
-        remappings=mappings_robot1,
+        namespace="robot1",
+        remappings=robot1_remappings,
         respawn=True
     )
-        
+    
+    # Add these remappings for robot2
+    robot2_remappings = [
+        ('Robot2/compass/bearing', 'compass/bearing'),
+        ('Robot2/compass/north_vector', 'compass/north_vector'),
+        ('/scan', 'scan'),
+        ('/scan/point_cloud', 'scan/point_cloud')
+        # Add more as needed
+    ] + mappings
+
     turtlebot_driver2 = WebotsController(
         robot_name='Robot2',
         parameters=[
             {'robot_description': robot_description_path,
              'use_sim_time': use_sim_time,
              'set_robot_state_publisher': True},
-            ros2_control_params
+            ros2_control_params2
         ],
-        remappings=mappings_robot2,
+        namespace="robot2",
+        remappings=robot2_remappings,
         respawn=True
     )
 
-    # Wait for the simulation to be ready to start navigation nodes
-    waiting_nodes = WaitForControllerConnection(
+    # Wait for the simulation to be ready to start spawner nodes
+    waiting_nodes1 = WaitForControllerConnection(
         target_driver=turtlebot_driver1,
-        nodes_to_start=ros_control_spawners
+        nodes_to_start=ros_control_spawners1
     )
+    waiting_nodes2 = WaitForControllerConnection(
+        target_driver=turtlebot_driver2,
+        nodes_to_start=ros_control_spawners2
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'world',
-            default_value='turtlebot3_burger_example.wbt',
+            default_value='tilde_world.wbt',
             description='Choose one of the world files from `/webots_ros2_turtlebot/world` directory'
         ),
         DeclareLaunchArgument(
@@ -140,11 +202,13 @@ def generate_launch_description():
         webots,
         webots._supervisor,
 
-        robot_state_publisher,
-        footprint_publisher,
+        robot_state_publisher1,
+        robot_state_publisher2,
+
         turtlebot_driver1,
         turtlebot_driver2,
-        waiting_nodes,
+        waiting_nodes1,
+        waiting_nodes2,
 
         # This action will kill all nodes once the Webots simulation has exited
         launch.actions.RegisterEventHandler(
@@ -155,4 +219,4 @@ def generate_launch_description():
                 ],
             )
         ),
-    ]) 
+    ])
