@@ -11,6 +11,7 @@
 - clone repository into 'src' folder
 - in commandline run:
 ```
+cd rosw_ws
 colcon build
 source  install/setup.bash
 ros2 launch assignment1 robot_launch.py
