@@ -38,7 +38,8 @@ def generate_launch_description():
     world = LaunchConfiguration('world')
     mode = LaunchConfiguration('mode')
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
-    robot_description_path = os.path.join(package_dir, 'resource', 'turtlebot_webots.urdf')
+    robot1_description_path = os.path.join(package_dir, 'resource', 'turtlebot1_webots.urdf')
+    robot2_description_path = os.path.join(package_dir, 'resource', 'turtlebot2_webots.urdf')
 
     webots = WebotsLauncher(
         world=PathJoinSubstitution([package_dir, 'worlds', world]),
@@ -52,7 +53,8 @@ def generate_launch_description():
         output='screen',
         namespace="robot1",
         parameters=[{
-            'robot_description': '<robot name=""><link name=""/></robot>'
+            'robot_description': '<robot name=""><link name=""/></robot>',
+            'frame_prefix': "robot1/"
         }],
     )
     
@@ -62,7 +64,8 @@ def generate_launch_description():
         output='screen',
         namespace="robot2",
         parameters=[{
-            'robot_description': '<robot name=""><link name=""/></robot>'
+            'robot_description': '<robot name=""><link name=""/></robot>',
+            'frame_prefix': "robot2/"
         }],
     )
 
@@ -105,8 +108,8 @@ def generate_launch_description():
     )
     ros_control_spawners2 = [diffdrive_controller_spawner2, joint_state_broadcaster_spawner2]
 
+    # Load and namespace ros2_control parameters
     ros2_control_params = os.path.join(package_dir, 'resource', 'ros2control.yml')
-
     def _create_namespaced_params_file(src, namespace):
         with open(src, 'r') as f:
             data = yaml.safe_load(f) or {}
@@ -118,10 +121,11 @@ def generate_launch_description():
         yaml.safe_dump(namespaced, tmp)
         tmp.close()
         return tmp.name
-
+    
     ros2_control_params1 = _create_namespaced_params_file(ros2_control_params, 'robot1')
     ros2_control_params2 = _create_namespaced_params_file(ros2_control_params, 'robot2')
 
+    # Remove diffdrive_controller prefix and set remappings based on ROS distro
     use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy'])
     if use_twist_stamped:
         mappings = [
@@ -138,15 +142,25 @@ def generate_launch_description():
     robot1_remappings = [
         ('Robot1/compass/bearing', 'compass/bearing'),
         ('Robot1/compass/north_vector', 'compass/north_vector'),
+        ('/imu', 'imu'),
         ('/scan', 'scan'),
         ('/scan/point_cloud', 'scan/point_cloud')
-        # Add more as needed
+    ] + mappings
+    
+    # Add these remappings for robot2
+    robot2_remappings = [
+        ('Robot2/compass/bearing', 'compass/bearing'),
+        ('Robot2/compass/north_vector', 'compass/north_vector'),
+        ('/imu', 'imu'),
+        ('/scan', 'scan'),
+        ('/scan/point_cloud', 'scan/point_cloud')
     ] + mappings
 
+    # TurtleBot3 Webots controllers
     turtlebot_driver1 = WebotsController(
         robot_name='Robot1',
         parameters=[
-            {'robot_description': robot_description_path,
+            {'robot_description': robot1_description_path,
              'use_sim_time': use_sim_time,
              'set_robot_state_publisher': True},
             ros2_control_params1
@@ -156,19 +170,10 @@ def generate_launch_description():
         respawn=True
     )
     
-    # Add these remappings for robot2
-    robot2_remappings = [
-        ('Robot2/compass/bearing', 'compass/bearing'),
-        ('Robot2/compass/north_vector', 'compass/north_vector'),
-        ('/scan', 'scan'),
-        ('/scan/point_cloud', 'scan/point_cloud')
-        # Add more as needed
-    ] + mappings
-
     turtlebot_driver2 = WebotsController(
         robot_name='Robot2',
         parameters=[
-            {'robot_description': robot_description_path,
+            {'robot_description': robot2_description_path,
              'use_sim_time': use_sim_time,
              'set_robot_state_publisher': True},
             ros2_control_params2
@@ -177,6 +182,8 @@ def generate_launch_description():
         remappings=robot2_remappings,
         respawn=True
     )
+    
+    ## ADD MORE NODES IF NEEDED ##
 
     # Wait for the simulation to be ready to start spawner nodes
     waiting_nodes1 = WaitForControllerConnection(

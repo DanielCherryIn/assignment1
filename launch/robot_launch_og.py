@@ -16,6 +16,9 @@
 
 """Launch Webots TurtleBot3 Burger driver."""
 
+## ORIGINAL VERSION FROM WEBOTS_ROS2 TURTLEBOT3 EXAMPLE --> ONLY ONE ROBOT
+## FOR REFERENCE PURPOSES
+
 import os
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument

@@ -7,7 +7,7 @@
                 <updateRate>5</updateRate>
                 <topicName>/scan</topicName>
                 <alwaysOn>false</alwaysOn>
-                <frameName>LDS-01</frameName>
+                <frameName>robot1/LDS-01</frameName>
             </ros>
         </device>
 
@@ -16,7 +16,7 @@
             <updateRate>20</updateRate>
             <topicName>/imu</topicName>
             <alwaysOn>false</alwaysOn>
-            <frameName>imu_link</frameName>
+            <frameName>robot1/imu_link</frameName>
             <inertialUnitName>inertial_unit</inertialUnitName>
             <gyroName>gyro</gyroName>
             <accelerometerName>accelerometer</accelerometerName>
