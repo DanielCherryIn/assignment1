@@ -67,6 +67,19 @@ def generate_launch_description():
             'robot_description': '<robot name=""><link name=""/></robot>',
             'frame_prefix': "robot2/"
         }],
+    )   
+    
+    # TF publishers to have relative robot positions in a map frame
+    static_tf_robot1 = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=['0.5', '0.5', '0', '0', '0', '0', 'map', 'robot1/odom']
+    )
+
+    static_tf_robot2 = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=['0.85', '0.5', '0', '0', '0', '0', 'map', 'robot2/odom']
     )
 
     # ROS control spawners
@@ -211,6 +224,9 @@ def generate_launch_description():
 
         robot_state_publisher1,
         robot_state_publisher2,
+        
+        static_tf_robot1,
+        static_tf_robot2,
 
         turtlebot_driver1,
         turtlebot_driver2,
