@@ -23,5 +23,5 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true
 ```
 - Launch rviz
 ```
-ros2 run rviz rviz
+ros2 run rviz2 rviz2
 ```
