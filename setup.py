@@ -21,6 +21,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'controller_robot1 = assignment1.controller_robot1:main',
+            'controller_robot2 = assignment1.controller_robot2:main'
         ],
     },
     data_files=[

@@ -197,6 +197,17 @@ def generate_launch_description():
     )
     
     ## ADD MORE NODES IF NEEDED ##
+    controller_robot1 = Node(
+        package='assignment1',
+        executable='controller_robot1',
+        name='controller_robot1'
+    )
+    
+    controller_robot2 = Node(
+        package='assignment1',
+        executable='controller_robot2',
+        name='controller_robot2'
+    )
 
     # Wait for the simulation to be ready to start spawner nodes
     waiting_nodes1 = WaitForControllerConnection(
@@ -205,7 +216,7 @@ def generate_launch_description():
     )
     waiting_nodes2 = WaitForControllerConnection(
         target_driver=turtlebot_driver2,
-        nodes_to_start=ros_control_spawners2
+        nodes_to_start=ros_control_spawners2 + [controller_robot1] + [controller_robot2]
     )
 
     return LaunchDescription([
