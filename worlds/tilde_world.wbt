@@ -4,7 +4,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projec
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/devices/robotis/protos/RobotisLds01.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/MattePaint.proto"
 
 WorldInfo {
   info [
@@ -14,8 +14,8 @@ WorldInfo {
   basicTimeStep 20
 }
 Viewpoint {
-  orientation 0.5587966492250466 -0.5601961907435623 -0.6114953251589603 4.24147364130504
-  position -0.021524298590338886 -0.6232958618218447 7.040820671984381
+  orientation 0.5773502925382137 -0.5773504345675387 -0.57735008046307 4.188785200065428
+  position 9.478928778050566e-05 -7.549656757088741e-06 7.59214633204548
   follow "TurtleBot3Burger:LDS-01"
 }
 TexturedBackground {
@@ -27,19 +27,17 @@ TexturedBackground {
   ]
 }
 RectangleArena {
-  floorSize 8 8
-  floorAppearance Parquetry {
-    type "light strip"
+  floorSize 6 6
+  floorAppearance MattePaint {
+    baseColor 0.8 0.8 0.8
   }
 }
 Solid {
   rotation 1 0 0 1.57
   children [
     Shape {
-      appearance PBRAppearance {
-        baseColor 0.101961 0.372549 0.705882
-        roughness 0.5
-        metalness 0
+      appearance MattePaint {
+        baseColor 0.6 0 0.8
       }
       geometry Mesh {
         url [
@@ -56,13 +54,19 @@ Solid {
   }
 }
 TurtleBot3Burger {
-  translation 0.5 0.5 0
+  translation -0.3 -0.275 0
+  rotation 0 0 1 2.7
   name "Robot1"
   controller "<extern>"
   controllerArgs [
     ""
   ]
   extensionSlot [
+    Pen {
+      translation 0 0 -0.145
+      rotation 1 0 0 -1.57
+      inkColor 0 0 1
+    }
     Solid {
       name "imu_link"
     }
@@ -74,13 +78,19 @@ TurtleBot3Burger {
   ]
 }
 TurtleBot3Burger {
-  translation 0.85 0.5 0
+  translation 0 -0.4 0
+  rotation 0 0 1 2.75
   name "Robot2"
   controller "<extern>"
   controllerArgs [
     ""
   ]
   extensionSlot [
+    Pen {
+      translation 0 0 -0.145
+      rotation 1 0 0 -1.57
+      inkColor 1 0 0
+    }
     Solid {
       name "imu_link"
     }
