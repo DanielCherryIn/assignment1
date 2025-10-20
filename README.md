@@ -45,7 +45,7 @@ Robot follower (robot1)
 - find cluster of points behind
 - search for points where distance changes more than a threshold value, and stays similar for an angle that corresponds more or less the size of the robot (wont work because depends on distance from other robot, calculate estimated real size of cluster based on distance of those rays and the angle span)
    - step 1 - for laserscan ranges behind robot1 (maybe also a bit in front for when robot turns), find clusters of angles separated by sharp changes in distance (set distance variation threshold for cluster borders, convert inf. Values to high number). One of the clusters should be robot2
-   - step 2 - discard clusters where there is a large disparity between its distance values (discard wall clusters; robot is small and will have similar range values for all points)
+   - step 2 - discard clusters where there is a large disparity between its smallest and largest distance values (discard wall clusters; robot is small and will have similar range values for all points)
    - step 3 - for remaining clusters, calculate real size estimate based on the angle span and range values (arc length -  radius: avg cluster distance; angle: angle span). Discard clusters that aren't within expected values for size of turtlebot.
    - step 4 - if there are still multiple valid clusters, select the closest to robot1
    - step 5 - get minimum distance from the cluster ranges OR middle range value OR average distance value and use it as feedback for forward velocity (v) PID controller (error = setpoint - distance)
