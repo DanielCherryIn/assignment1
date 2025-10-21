@@ -19,6 +19,9 @@ class ControllerRobot1(Node):
         self.robot2_min_range = None
         self.robot2_lastDetect = 0.0
 
+        self.prev_robot2_mia = None
+        self.prev_robot2_oor = None
+
         # Tunable parameters
         self.follow_distance = 0.6    # desired gap to keep (m)
         self.lost_distance = 1.2      # if guest reports > this, leader should stop and wait
@@ -46,10 +49,10 @@ class ControllerRobot1(Node):
         if seen:
             self.robot2_min_range = min(seen)
             self.robot2_lastDetect = time.time()
-            self.get_logger().debug('Robot1 Scan - robot2 forward min range: %.3f' % self.robot2_min_range)
-        else:
+            #self.get_logger().debug('Robot1 Scan - robot2 forward min range: %.3f' % self.robot2_min_range)
+        #else:
             # keep previous value; timeout logic will mark as lost
-            self.get_logger().debug('Robot1 Scan - robot2 not detected (forward sector)')
+            #self.get_logger().debug('Robot1 Scan - robot2 not detected (forward sector)')
 
     def scan_callback(self, msg: LaserScan):
         cmd = Twist()
@@ -74,7 +77,7 @@ class ControllerRobot1(Node):
         front_min = min(front_vals) if front_vals else float('inf')
         side_min = min(side_vals) if side_vals else float('inf')
 
-        self.get_logger().debug('Robot1 Scan - front_min: %.3f side_min: %.3f' % (front_min, side_min))
+        #self.get_logger().debug('Robot1 Scan - front_min: %.3f side_min: %.3f' % (front_min, side_min))
 
         # orientation to wall: use side_min so side walls/corners drive angular correction
         if side_min < 0.3:
@@ -83,22 +86,27 @@ class ControllerRobot1(Node):
             cmd.angular.z = 0.0
 
         # front collision: only stop if something is actually in front
-        if front_min < self.front_stop_dist:
-            self.get_logger().info('robot1 front collision stop (front_min=%.2f)' % front_min)
-            cmd.linear.x = 0.0
-            cmd.angular.z = 0.0
-            self.publisher_.publish(cmd)
-            return
+        #if front_min < self.front_stop_dist:
+        #    self.get_logger().info('robot1 front collision stop (front_min=%.2f)' % front_min)
+        #    cmd.linear.x = 0.0
+        #    cmd.angular.z = 0.0
+        #    self.publisher_.publish(cmd)
+        #    return
 
         # repulsion / push behavior based on robot2 detection
         robot2_age = time.time() - self.robot2_lastDetect if self.robot2_lastDetect else float('inf')
         robot2_mia = (self.robot2_min_range is None) or (robot2_age > self.guest_timeout)
         robot2_oor = (self.robot2_min_range is not None) and (self.robot2_min_range > self.lost_distance)
 
-        if robot2_mia or robot2_oor:
-            cmd.linear.x = 0.0
+        # Log only if the state of mia or oor changes
+        if robot2_mia != self.prev_robot2_mia or robot2_oor != self.prev_robot2_oor:
             self.get_logger().debug('robot1: robot2 missing/too_far (mia=%s oor=%s age=%.2f)' %
                                     (robot2_mia, robot2_oor, robot2_age))
+            self.prev_robot2_mia = robot2_mia
+            self.prev_robot2_oor = robot2_oor
+
+        if robot2_mia or robot2_oor:
+            cmd.linear.x = 0.0
         else:
             if self.robot2_min_range < self.follow_distance:
                 v = self.repulse_gain * (self.follow_distance - self.robot2_min_range)
