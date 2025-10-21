@@ -200,13 +200,17 @@ def generate_launch_description():
     controller_robot1 = Node(
         package='assignment1',
         executable='controller_robot1',
-        name='controller_robot1'
+        name='controller_robot1',
+        namespace='robot1',  
+        output='screen'      
     )
     
     controller_robot2 = Node(
         package='assignment1',
         executable='controller_robot2',
-        name='controller_robot2'
+        name='controller_robot2',
+        namespace='robot2', 
+        output='screen'
     )
 
     # Wait for the simulation to be ready to start spawner nodes

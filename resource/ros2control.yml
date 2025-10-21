@@ -19,7 +19,7 @@ diffdrive_controller:
     # The real separation between wheels is not resulting in a perfect odometry
     wheel_separation_multiplier: 1.112
 
-    use_stamped_vel: false
+    use_stamped_vel: true
     base_frame_id: "base_link"
     
     linear:
