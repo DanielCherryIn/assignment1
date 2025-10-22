@@ -37,7 +37,7 @@ class ControllerRobot2(Node):
         # Publish desired speeds
         cmd.header.stamp = self.get_clock().now().to_msg()
         self.publisher_.publish(cmd)
-        self.get_logger().info('Robot2 Publishing - v:"%f" w:"%f"' % (cmd.twist.linear.x, cmd.twist.angular.z))
+        #self.get_logger().info('Robot2 Publishing - v:"%f" w:"%f"' % (cmd.twist.linear.x, cmd.twist.angular.z))
 
 
 def main(args=None):
