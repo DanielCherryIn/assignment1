@@ -32,12 +32,9 @@ class ControllerRobot1(Node):
     def scan_callback(self, msg):
         cmd = TwistStamped()
 
-        cmd = TwistStamped()
-        cmd.header.stamp = self.get_clock().now().to_msg()
-
         cmd.twist.linear.x, cmd.twist.angular.z = self.wall_follower_lidar_controller.compute_velocity(msg)
-        
         cmd.header.stamp = self.get_clock().now().to_msg()
+        
         self.publisher_.publish(cmd)
         self.get_logger().info('Robot1 Publishing - v:"%f" w:"%f"' % (cmd.twist.linear.x, cmd.twist.angular.z))
 
