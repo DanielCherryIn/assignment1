@@ -216,7 +216,7 @@ def generate_launch_description():
     )
     waiting_nodes2 = WaitForControllerConnection(
         target_driver=turtlebot_driver2,
-        nodes_to_start=ros_control_spawners2 + [controller_robot1] + [controller_robot2]
+        nodes_to_start=ros_control_spawners2
     )
 
     return LaunchDescription([
@@ -243,6 +243,9 @@ def generate_launch_description():
         turtlebot_driver2,
         waiting_nodes1,
         waiting_nodes2,
+        
+        controller_robot1,
+        controller_robot2,
 
         # This action will kill all nodes once the Webots simulation has exited
         launch.actions.RegisterEventHandler(

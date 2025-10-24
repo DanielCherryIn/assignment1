@@ -16,6 +16,7 @@ import os
 import rclpy
 from rclpy.node import Node
 
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
@@ -31,9 +32,21 @@ class ControllerRobot2(Node):
         else:
             self.publisher_ = self.create_publisher(Twist, '/robot2/cmd_vel', 10)
         
-        self.subscribtion = self.create_subscription(LaserScan, '/robot2/scan', self.scan_callback, 10)
-
-    def scan_callback(self, msg):        
+        self.laser_sub = self.create_subscription(LaserScan, '/robot2/scan', self.scan_callback, 10)
+        self.start_sub = self.create_subscription(Bool, '/start_robots', self.start_callback, 10)
+        self.started = False
+        
+    def start_callback(self, msg):
+        self.started = msg.data
+        if self.started:
+            self.get_logger().info('Robots STARTED')
+        else:
+            self.get_logger().info('Robots STOPPED')
+            
+    def scan_callback(self, msg):
+        if not self.started:
+            return
+        
         # Calculate desired speeds based on laserscan
         min_range = min(msg.ranges)
         if min_range < 0.5:
