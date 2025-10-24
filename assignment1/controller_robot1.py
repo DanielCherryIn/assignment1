@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import rclpy
 from rclpy.node import Node
 
+from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
 
@@ -23,20 +25,35 @@ from assignment1.wall_follower_lidar_controller import WallFollowerLidarControll
 class ControllerRobot1(Node):
     def __init__(self):
         super().__init__('controller_robot1')
-
-        self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
-
-        self.publisher_ = self.create_publisher(TwistStamped, '/robot1/cmd_vel', 10)
-        self.subscribtion = self.create_subscription(LaserScan, '/robot1/scan', self.scan_callback, 10)
-
-    def scan_callback(self, msg):
-        cmd = TwistStamped()
-
-        cmd.twist.linear.x, cmd.twist.angular.z = self.wall_follower_lidar_controller.compute_velocity(msg)
-        cmd.header.stamp = self.get_clock().now().to_msg()
         
-        self.publisher_.publish(cmd)
-        self.get_logger().info('Robot1 Publishing - v:"%f" w:"%f"' % (cmd.twist.linear.x, cmd.twist.angular.z))
+        self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
+        
+        self.use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy', 'kilted'])
+        if self.use_twist_stamped:
+            self.publisher_ = self.create_publisher(TwistStamped, '/robot1/cmd_vel', 10)
+        else:
+            self.publisher_ = self.create_publisher(Twist, '/robot1/cmd_vel', 10)
+            
+        self.subscribtion = self.create_subscription(LaserScan, '/robot1/scan', self.scan_callback, 10)
+        
+    def scan_callback(self, msg):
+        # Calculate desired speeds based on laserscan
+        v, w = self.wall_follower_lidar_controller.compute_velocity(msg)
+        
+        # Publish desired speeds
+        if self.use_twist_stamped:
+            cmd = TwistStamped()
+            cmd.header.stamp = self.get_clock().now().to_msg()
+            cmd.twist.linear.x = v
+            cmd.twist.angular.z = w
+            self.publisher_.publish(cmd)
+        else:
+            cmd = Twist()
+            cmd.linear.x = v
+            cmd.angular.z = w
+            self.publisher_.publish(cmd)
+            
+        self.get_logger().info('Robot1 Publishing - v:"%f" w:"%f"' % (v, w))
 
 
 def main(args=None):

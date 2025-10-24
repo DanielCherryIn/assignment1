@@ -139,7 +139,7 @@ def generate_launch_description():
     ros2_control_params2 = _create_namespaced_params_file(ros2_control_params, 'robot2')
 
     # Remove diffdrive_controller prefix and set remappings based on ROS distro
-    use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy'])
+    use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy', 'kilted'])
     if use_twist_stamped:
         mappings = [
             ('diffdrive_controller/cmd_vel', 'cmd_vel'),
