@@ -15,7 +15,7 @@
 import rclpy
 from rclpy.node import Node
 
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
 from assignment1.wall_follower_lidar_controller import WallFollowerLidarController
@@ -26,17 +26,16 @@ class ControllerRobot1(Node):
 
         self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
 
-        self.publisher_ = self.create_publisher(TwistStamped, '/robot1/cmd_vel', 10)
+        self.publisher_ = self.create_publisher(Twist, '/robot1/cmd_vel', 10)
         self.subscribtion = self.create_subscription(LaserScan, '/robot1/scan', self.scan_callback, 10)
 
     def scan_callback(self, msg):
-        cmd = TwistStamped()
+        cmd = Twist()
 
-        cmd.twist.linear.x, cmd.twist.angular.z = self.wall_follower_lidar_controller.compute_velocity(msg)
-        cmd.header.stamp = self.get_clock().now().to_msg()
+        cmd.linear.x, cmd.angular.z = self.wall_follower_lidar_controller.compute_velocity(msg)
         
         self.publisher_.publish(cmd)
-        self.get_logger().info('Robot1 Publishing - v:"%f" w:"%f"' % (cmd.twist.linear.x, cmd.twist.angular.z))
+        self.get_logger().info('Robot1 Publishing - v:"%f" w:"%f"' % (cmd.linear.x, cmd.angular.z))
 
 
 def main(args=None):
