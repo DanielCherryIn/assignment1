@@ -1,6 +1,8 @@
+import os
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 from assignment1.wall_follower_lidar_controller import WallFollowerLidarController
 from sensor_msgs.msg import LaserScan
 import math
@@ -12,7 +14,13 @@ class ControllerRobot1(Node):
 
     def __init__(self):
         super().__init__('controller_robot1')
-        self.publisher_ = self.create_publisher(Twist, '/robot1/cmd_vel', 10)
+        
+        self.use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy', 'kilted'])
+        if self.use_twist_stamped:
+            self.publisher_ = self.create_publisher(TwistStamped, '/robot1/cmd_vel', 10)
+        else:
+            self.publisher_ = self.create_publisher(Twist, '/robot1/cmd_vel', 10)
+            
         self.subscribtion = self.create_subscription(LaserScan, '/robot1/scan', self.scan_callback, 10)
         self.start_sub = self.create_subscription(Bool, '/start_robots', self.start_callback, 10)
 
@@ -50,7 +58,7 @@ class ControllerRobot1(Node):
     def scan_callback(self, msg: LaserScan):
         if not self.started:
             return
-        cmd = Twist()
+        
         clusters = self.find_clusters(msg)
         valid_clusters = self.filter_clusters(clusters)
 
@@ -76,7 +84,7 @@ class ControllerRobot1(Node):
             f"Threshold={self.escape_threshold:.3f} m/s"
         )
 
-        self.control_robot(cmd, msg)
+        self.control_robot(msg)
 
     def find_clusters(self, msg):
         clusters = []
@@ -132,13 +140,14 @@ class ControllerRobot1(Node):
 
         return valid_clusters
 
-    def control_robot(self, cmd, msg):
+    def control_robot(self, msg):
         robot2_age = time.time() - self.robot2_last_detect if self.robot2_last_detect else float('inf')
         robot2_missing = self.robot2_distance is None or robot2_age > self.guest_timeout
         robot2_too_far = self.robot2_distance is not None and self.robot2_distance > self.lost_distance
 
         if robot2_missing or robot2_too_far:
-            cmd.linear.x = 0.0
+            v = 0.0
+            w = 0.0
             
         else:
             v_wall, w_wall = self.wall_follower_lidar_controller.compute_velocity(msg)
@@ -158,10 +167,20 @@ class ControllerRobot1(Node):
             adjusted_v = max(0.0, min(self.max_speed, adjusted_v))
      
             
-            cmd.linear.x = adjusted_v
-            cmd.angular.z = w_wall
+            v = adjusted_v
+            w = w_wall
 
-        self.publisher_.publish(cmd)
+        if self.use_twist_stamped:
+            cmd = TwistStamped()
+            cmd.header.stamp = self.get_clock().now().to_msg()
+            cmd.twist.linear.x = v
+            cmd.twist.angular.z = w
+            self.publisher_.publish(cmd)
+        else:
+            cmd = Twist()
+            cmd.linear.x = v
+            cmd.angular.z = w
+            self.publisher_.publish(cmd)
 
 
 def main(args=None):

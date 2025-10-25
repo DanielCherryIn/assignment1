@@ -1,7 +1,9 @@
+import os
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
 from assignment1.wall_follower_lidar_controller import WallFollowerLidarController
 import math
@@ -15,7 +17,11 @@ class ControllerRobot2(Node):
         self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
 
         # Publisher for velocity commands
-        self.publisher_ = self.create_publisher(Twist, '/robot2/cmd_vel', 10)
+        self.use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy', 'kilted'])
+        if self.use_twist_stamped:
+            self.publisher_ = self.create_publisher(TwistStamped, '/robot2/cmd_vel', 10)
+        else:
+            self.publisher_ = self.create_publisher(Twist, '/robot2/cmd_vel', 10)
 
         # Subscriptions
         self.laser_sub = self.create_subscription(LaserScan, '/robot2/scan', self.scan_callback, 10)
@@ -45,10 +51,17 @@ class ControllerRobot2(Node):
         v += ((math.sin(time_elapsed) + 1.0) / 2.0) * 0.02
 
         # Publish the velocity commands
-        cmd = Twist()
-        cmd.linear.x = v
-        cmd.angular.z = w
-        self.publisher_.publish(cmd)
+        if self.use_twist_stamped:
+            cmd = TwistStamped()
+            cmd.header.stamp = self.get_clock().now().to_msg()
+            cmd.twist.linear.x = v
+            cmd.twist.angular.z = w
+            self.publisher_.publish(cmd)
+        else:
+            cmd = Twist()
+            cmd.linear.x = v
+            cmd.angular.z = w
+            self.publisher_.publish(cmd)
         #self.get_logger().info(f'Robot2 Publishing - v: {v:.3f}, w: {w:.3f}')
 
 
