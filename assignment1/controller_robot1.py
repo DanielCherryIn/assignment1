@@ -23,6 +23,8 @@ from sensor_msgs.msg import LaserScan
 
 from assignment1.wall_follower_lidar_controller import WallFollowerLidarController
 
+import math
+
 class ControllerRobot1(Node):
     def __init__(self):
         super().__init__('controller_robot1')
@@ -52,6 +54,11 @@ class ControllerRobot1(Node):
         
         # Calculate desired speeds based on laserscan
         v, w = self.wall_follower_lidar_controller.compute_velocity(msg)
+        
+        # Temporary (set linear velocity to a sinusoidal value around 0.1)
+        time_elapsed = self.get_clock().now().nanoseconds * 1e-9
+        v = 0.05 + ((math.sin(time_elapsed) + 1.0) / 2.0) * 0.1
+        
         
         # Publish desired speeds
         if self.use_twist_stamped:
