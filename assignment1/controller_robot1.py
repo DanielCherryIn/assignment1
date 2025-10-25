@@ -34,8 +34,8 @@ class ControllerRobot1(Node):
         
         # Lidar point clustering parameters
         self.cluster_distance_threshold = 0.1
-        self.robot_size_min = 0.03
-        self.robot_size_max = 0.6
+        self.robot_size_min = 0.01
+        self.robot_size_max = 1.0
 
         self.robot2_distance = None
 
@@ -72,7 +72,9 @@ class ControllerRobot1(Node):
         prev_distance = None
 
         sector_min_angle = -math.pi
+     
         sector_max_angle = math.pi
+        
 
         angle = msg.angle_min
         for r in msg.ranges:
@@ -90,6 +92,8 @@ class ControllerRobot1(Node):
             prev_distance = r
             angle += msg.angle_increment
 
+
+
         if current_cluster:
             clusters.append(current_cluster)
         return clusters
@@ -100,16 +104,22 @@ class ControllerRobot1(Node):
             distances = [p['distance'] for p in cluster]
             min_distance = min(distances)
             max_distance = max(distances)
-
-            if max_distance - min_distance > self.cluster_distance_threshold:
-                continue
-
             avg_distance = sum(distances) / len(distances)
             angle_span = abs(cluster[-1]['angle'] - cluster[0]['angle'])
             cluster_size = avg_distance * angle_span
 
-            if angle_span > math.pi / 4:
+            # LOGGING: Track cluster info
+            self.get_logger().info(
+                f"Cluster info -> points: {len(cluster)}, "
+                f"min: {min_distance:.3f}, max: {max_distance:.3f}, "
+                f"avg: {avg_distance:.3f}, angle_span: {angle_span:.3f}, "
+                f"cluster_size: {cluster_size:.3f}"
+            )
+
+            # Filtering checks
+            if max_distance - min_distance > self.cluster_distance_threshold:
                 continue
+
 
             if self.robot_size_min <= cluster_size <= self.robot_size_max:
                 valid_clusters.append({
@@ -119,6 +129,7 @@ class ControllerRobot1(Node):
                 })
 
         return valid_clusters
+
 
     def control_robot(self, msg):
         robot2_missing = self.robot2_distance is None
@@ -130,7 +141,7 @@ class ControllerRobot1(Node):
             
         else:
             v_wall, w_wall = self.wall_follower_lidar_controller.compute_velocity(msg)
-            v = self.pid.compute(self.robot2_distance)
+            v = self.pid.compute(self.robot2_distance) * 0.25
             w = w_wall
 
         if self.use_twist_stamped:
