@@ -4,11 +4,10 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TwistStamped
 from assignment1.wall_follower_lidar_controller import WallFollowerLidarController
+from assignment1.pid_controller import PIDController
 from sensor_msgs.msg import LaserScan
 import math
 from std_msgs.msg import Bool
-
-import time
 
 class ControllerRobot1(Node):
 
@@ -22,38 +21,30 @@ class ControllerRobot1(Node):
             self.publisher_ = self.create_publisher(Twist, '/robot1/cmd_vel', 10)
             
         self.subscribtion = self.create_subscription(LaserScan, '/robot1/scan', self.scan_callback, 10)
+        
         self.start_sub = self.create_subscription(Bool, '/start_robots', self.start_callback, 10)
-
         self.started = False 
 
         self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
-
+    
         self.follow_distance = 0.8
         self.lost_distance = 1.5
-        self.guest_timeout = 1.0
-        self.max_speed = 2.0
-
+        
+        self.pid = PIDController(kp=1.0, ki=0.0, kd=0, setpoint=self.follow_distance)
+        
+        # Lidar point clustering parameters
         self.cluster_distance_threshold = 0.1
         self.robot_size_min = 0.03
         self.robot_size_max = 0.6
 
-        self.robot2_last_detect = 0.0
         self.robot2_distance = None
-
-        self.last_robot2_distance = None
-        self.robot2_last_update_time = None
-        self.closing_speed = 0.0
-        self.smoothing_factor = 0.4
-
-        self.escape_threshold = 0.1     # aggressive
-        self.adaptive_gain = 3.5
 
     def start_callback(self, msg):
         self.started = msg.data
-        #if self.started:
-        #    self.get_logger().info('Robot1 STARTED')
-        #else:
-        #    self.get_logger().info('Robot1 STOPPED')
+        if self.started:
+            self.get_logger().info('Robot1 STARTED')
+        else:
+            self.get_logger().info('Robot1 STOPPED')
 
     def scan_callback(self, msg: LaserScan):
         if not self.started:
@@ -65,23 +56,12 @@ class ControllerRobot1(Node):
         if valid_clusters:
             closest_cluster = min(valid_clusters, key=lambda c: c['avg_distance'])
             self.robot2_distance = closest_cluster['avg_distance']
-            now = time.time()
-            if self.last_robot2_distance is not None and self.robot2_last_update_time:
-                dt = now - self.robot2_last_update_time
-                if dt > 0:
-                    raw_speed = (self.last_robot2_distance - self.robot2_distance) / dt
-                    self.closing_speed = (1 - self.smoothing_factor) * self.closing_speed + self.smoothing_factor * raw_speed
-            self.last_robot2_distance = self.robot2_distance
-            self.robot2_last_update_time = now
-            self.robot2_last_detect = now
         else:
             self.robot2_distance = None
 
 
         self.get_logger().info(
             f"SCAN: R2 Dist={self.robot2_distance if self.robot2_distance is not None else 'N/A'}, "
-            f"Closing Speed={self.closing_speed:.3f} m/s, "
-            f"Threshold={self.escape_threshold:.3f} m/s"
         )
 
         self.control_robot(msg)
@@ -141,8 +121,7 @@ class ControllerRobot1(Node):
         return valid_clusters
 
     def control_robot(self, msg):
-        robot2_age = time.time() - self.robot2_last_detect if self.robot2_last_detect else float('inf')
-        robot2_missing = self.robot2_distance is None or robot2_age > self.guest_timeout
+        robot2_missing = self.robot2_distance is None
         robot2_too_far = self.robot2_distance is not None and self.robot2_distance > self.lost_distance
 
         if robot2_missing or robot2_too_far:
@@ -151,23 +130,7 @@ class ControllerRobot1(Node):
             
         else:
             v_wall, w_wall = self.wall_follower_lidar_controller.compute_velocity(msg)
-
-            if self.closing_speed > self.escape_threshold:
- 
-                self.get_logger().error(
-                    f"!!! ESCAPE EMERGENCY TRIGGERED !!! "
-                    f"Closing Speed ({self.closing_speed:.3f}) > Threshold ({self.escape_threshold:.3f}). "
-                    f"Setting v_final={self.max_speed:.3f}"
-                )
-                # ---------------------------------------------------------------------------------
-                adjusted_v = self.max_speed
-            else:
-                adjusted_v = v_wall + self.adaptive_gain * self.closing_speed
-
-            adjusted_v = max(0.0, min(self.max_speed, adjusted_v))
-     
-            
-            v = adjusted_v
+            v = self.pid.compute(self.robot2_distance)
             w = w_wall
 
         if self.use_twist_stamped:
