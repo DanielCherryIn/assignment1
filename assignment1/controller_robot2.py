@@ -1,75 +1,55 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import os
 import rclpy
 from rclpy.node import Node
-
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
-from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
+from assignment1.wall_follower_lidar_controller import WallFollowerLidarController
+import math
+
 
 class ControllerRobot2(Node):
-
     def __init__(self):
         super().__init__('controller_robot2')
-        
-        self.use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy', 'kilted'])
-        if self.use_twist_stamped:
-            self.publisher_ = self.create_publisher(TwistStamped, '/robot2/cmd_vel', 10)
-        else:
-            self.publisher_ = self.create_publisher(Twist, '/robot2/cmd_vel', 10)
-        
+
+        # Wall-following controller
+        self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
+
+        # Publisher for velocity commands
+        self.publisher_ = self.create_publisher(Twist, '/robot2/cmd_vel', 10)
+
+        # Subscriptions
         self.laser_sub = self.create_subscription(LaserScan, '/robot2/scan', self.scan_callback, 10)
         self.start_sub = self.create_subscription(Bool, '/start_robots', self.start_callback, 10)
+
+        # State variables
         self.started = False
-        
+
     def start_callback(self, msg):
+        """Callback for the /start_robots topic."""
         self.started = msg.data
         if self.started:
-            self.get_logger().info('Robots STARTED')
+            self.get_logger().info('Robot2 STARTED')
         else:
-            self.get_logger().info('Robots STOPPED')
-            
+            self.get_logger().info('Robot2 STOPPED')
+
     def scan_callback(self, msg):
+        """Callback for the laser scan data."""
         if not self.started:
             return
-        
-        # Calculate desired speeds based on laserscan
-        min_range = min(msg.ranges)
-        if min_range < 0.5:
-            v = 0.0
-            w = 0.5
-        else:
-            v = 0.15
-            w = 0.0
-        
-        # Publish desired speeds
-        if self.use_twist_stamped:
-            cmd = TwistStamped()
-            cmd.header.stamp = self.get_clock().now().to_msg()
-            cmd.twist.linear.x = v
-            cmd.twist.angular.z = w
-            self.publisher_.publish(cmd)
-        else:
-            cmd = Twist()
-            cmd.linear.x = v
-            cmd.angular.z = w
-            self.publisher_.publish(cmd)
-            
-        self.get_logger().info('Robot2 Publishing - v:"%f" w:"%f"' % (v, w))
+
+        # Wall-following logic
+        v, w = self.wall_follower_lidar_controller.compute_velocity(msg)
+
+        # Add sinusoidal speed variation
+        time_elapsed = self.get_clock().now().nanoseconds * 1e-9
+        v += ((math.sin(time_elapsed) + 1.0) / 2.0) * 0.1
+
+        # Publish the velocity commands
+        cmd = Twist()
+        cmd.linear.x = v
+        cmd.angular.z = w
+        self.publisher_.publish(cmd)
+        self.get_logger().info(f'Robot2 Publishing - v: {v:.3f}, w: {w:.3f}')
 
 
 def main(args=None):
@@ -79,9 +59,6 @@ def main(args=None):
 
     rclpy.spin(controller_robot2)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     controller_robot2.destroy_node()
     rclpy.shutdown()
 
