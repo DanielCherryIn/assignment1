@@ -42,14 +42,14 @@ class ControllerRobot2(Node):
 
         # Add sinusoidal speed variation
         time_elapsed = self.get_clock().now().nanoseconds * 1e-9
-        v += ((math.sin(time_elapsed) + 1.0) / 2.0) * 0.1
+        v += ((math.sin(time_elapsed) + 1.0) / 2.0) * 0.02
 
         # Publish the velocity commands
         cmd = Twist()
         cmd.linear.x = v
         cmd.angular.z = w
         self.publisher_.publish(cmd)
-        self.get_logger().info(f'Robot2 Publishing - v: {v:.3f}, w: {w:.3f}')
+        #self.get_logger().info(f'Robot2 Publishing - v: {v:.3f}, w: {w:.3f}')
 
 
 def main(args=None):
