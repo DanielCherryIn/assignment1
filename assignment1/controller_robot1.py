@@ -141,7 +141,7 @@ class ControllerRobot1(Node):
             
         else:
             v_wall, w_wall = self.wall_follower_lidar_controller.compute_velocity(msg)
-            v = self.pid.compute(self.robot2_distance) * 0.25
+            v = self.pid.compute(self.robot2_distance) * 0.27
             w = w_wall
 
         if self.use_twist_stamped:
