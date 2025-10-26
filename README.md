@@ -11,14 +11,14 @@
 ├── setup.py                     # Python package setup
 ├── setup.cfg                    # Python package configuration
 ├── package.xml                  # ROS 2 package manifest
-├── assignment1                  # Main Python code for robot controllers
+├── assignment1              
 │   ├── base_lidar_controller.py         # Base class for LIDAR-based robot control
 │   ├── controller_robot1.py             # Robot 1 specific controller
 │   ├── controller_robot2.py             # Robot 2 specific controller
 │   ├── pid.py                           # PID control implementation
 │   ├── pid_controller.py                # PID controller class
 │   └── wall_follower_lidar_controller.py  # Wall-following controller using LIDAR
-├── launch                       # ROS 2 launch scripts
+├── launch                    
 │   ├── robot_launch.py                 # Launches robots with custom controllers
 │   └── robot_launch_og.py              # Original or alternate launch file
 ├── resource                     # Resource and configuration files
@@ -26,7 +26,7 @@
 │   ├── ros2control.yml                  # ROS 2 control configuration
 │   ├── turtlebot1_webots.urdf          # TurtleBot 1 URDF model
 │   └── turtlebot2_webots.urdf          # TurtleBot 2 URDF model
-├── test                         # Unit and style tests
+├── test                        
 │   ├── test_copyright.py               # Copyright header checks
 │   ├── test_flake8.py                  # Python style checks (Flake8)
 │   └── test_pep257.py                  # Docstring convention checks
