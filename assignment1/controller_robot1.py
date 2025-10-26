@@ -27,10 +27,10 @@ class ControllerRobot1(Node):
 
         self.wall_follower_lidar_controller = WallFollowerLidarController(0.25)
     
-        self.follow_distance = 0.8
+        self.follow_distance = 0.5
         self.lost_distance = 1.5
         
-        self.pid = PIDController(kp=1.0, ki=0.0, kd=0, setpoint=self.follow_distance)
+        self.pid = PIDController(kp=1.5, ki=0.0, kd=0.0, setpoint=self.follow_distance)
         
         # Lidar point clustering parameters
         self.cluster_distance_threshold = 0.2
@@ -170,7 +170,7 @@ class ControllerRobot1(Node):
             
         else:
             v_wall, w_wall = self.wall_follower_lidar_controller.compute_velocity(msg)
-            v = self.pid.compute(self.robot2_distance) * 0.27
+            v = self.pid.compute(self.robot2_distance)
             w = w_wall
 
         if self.use_twist_stamped:

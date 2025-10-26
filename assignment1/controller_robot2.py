@@ -29,6 +29,11 @@ class ControllerRobot2(Node):
 
         # State variables
         self.started = False
+        
+        # Sinusoidal speed parameters
+        self.base_speed = 0.06
+        self.speed_amplitude = 0.04 
+        self.frequency = 0.5 
 
     def start_callback(self, msg):
         """Callback for the /start_robots topic."""
@@ -48,8 +53,8 @@ class ControllerRobot2(Node):
 
         # Add sinusoidal speed variation
         time_elapsed = self.get_clock().now().nanoseconds * 1e-9
-        v += ((math.sin(time_elapsed) + 1.0) / 2.0) * 0.02
-
+        v = self.base_speed + self.speed_amplitude * math.sin(2 * math.pi * self.frequency * time_elapsed)
+        
         # Publish the velocity commands
         if self.use_twist_stamped:
             cmd = TwistStamped()
