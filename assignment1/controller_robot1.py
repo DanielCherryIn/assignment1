@@ -30,7 +30,7 @@ class ControllerRobot1(Node):
         self.follow_distance = 0.5
         self.lost_distance = 1.5
         
-        self.pid = PIDController(kp=1.5, ki=0.0, kd=0.0, setpoint=self.follow_distance)
+        self.pid = PIDController(kp=3.0, ki=0.0, kd=0.0, setpoint=self.follow_distance)
         
         # Lidar point clustering parameters
         self.cluster_distance_threshold = 0.2
