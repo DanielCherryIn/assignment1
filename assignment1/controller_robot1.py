@@ -33,9 +33,9 @@ class ControllerRobot1(Node):
         self.pid = PIDController(kp=1.0, ki=0.0, kd=0, setpoint=self.follow_distance)
         
         # Lidar point clustering parameters
-        self.cluster_distance_threshold = 0.1
+        self.cluster_distance_threshold = 0.2
         self.robot_size_min = 0.01
-        self.robot_size_max = 1.0
+        self.robot_size_max = 0.2
 
         self.robot2_distance = None
 
@@ -51,7 +51,7 @@ class ControllerRobot1(Node):
             return
         
         clusters = self.find_clusters(msg)
-        valid_clusters = self.filter_clusters(clusters)
+        valid_clusters = self.filter_clusters(clusters, msg.angle_increment)
 
         if valid_clusters:
             closest_cluster = min(valid_clusters, key=lambda c: c['avg_distance'])
@@ -72,14 +72,16 @@ class ControllerRobot1(Node):
         prev_distance = None
 
         sector_min_angle = -math.pi
-     
         sector_max_angle = math.pi
-        
-
+    
         angle = msg.angle_min
         for r in msg.ranges:
+            # when there is a nan/inf, make a new cluster
             if r is None or math.isinf(r) or math.isnan(r):
                 angle += msg.angle_increment
+                if current_cluster:
+                    clusters.append(current_cluster)
+                current_cluster = []
                 continue
             if not (sector_min_angle <= angle <= sector_max_angle):
                 angle += msg.angle_increment
@@ -92,32 +94,59 @@ class ControllerRobot1(Node):
             prev_distance = r
             angle += msg.angle_increment
 
-
-
         if current_cluster:
             clusters.append(current_cluster)
+            
+        # merge wrap-around clusters if they belong together
+        if len(clusters) > 1:
+            first_cluster = clusters[0]
+            last_cluster = clusters[-1]
+            first_dist = first_cluster[0]['distance']
+            last_dist = last_cluster[-1]['distance']
+            
+            angle_diff = (abs((first_cluster[0]['angle'] - last_cluster[-1]['angle']) - 2*math.pi))
+            
+            '''
+            self.get_logger().info(
+                f"Merge: angle_diff={angle_diff}, dist={abs(first_dist-last_dist)}"
+            )
+            '''
+            
+            if abs(first_dist - last_dist) < self.cluster_distance_threshold and angle_diff <= abs(msg.angle_increment):
+                merged_cluster = last_cluster + first_cluster
+                clusters = [merged_cluster] + clusters[1:-1]
+                '''
+                self.get_logger().info(
+                    "BORDER CLUSTERS MERGED"
+                )
+                '''
+
+        
         return clusters
 
-    def filter_clusters(self, clusters):
+    def filter_clusters(self, clusters, angle_increment):
         valid_clusters = []
         for cluster in clusters:
             distances = [p['distance'] for p in cluster]
             min_distance = min(distances)
             max_distance = max(distances)
             avg_distance = sum(distances) / len(distances)
-            angle_span = abs(cluster[-1]['angle'] - cluster[0]['angle'])
+            angle_span = len(cluster)*abs(angle_increment)
             cluster_size = avg_distance * angle_span
 
+            '''
             # LOGGING: Track cluster info
             self.get_logger().info(
-                f"Cluster info -> points: {len(cluster)}, "
+                f"points: {len(cluster)}, "
+                f"angles: {cluster[0]['angle']:.3f} > {cluster[-1]['angle']:.3f}, "
                 f"min: {min_distance:.3f}, max: {max_distance:.3f}, "
                 f"avg: {avg_distance:.3f}, angle_span: {angle_span:.3f}, "
                 f"cluster_size: {cluster_size:.3f}"
             )
+            '''
 
             # Filtering checks
-            if max_distance - min_distance > self.cluster_distance_threshold:
+            if max_distance - min_distance > self.cluster_distance_threshold or len(cluster) < 3:
                 continue
 
 
