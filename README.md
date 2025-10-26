@@ -16,6 +16,10 @@ colcon build
 source  install/setup.bash
 ros2 launch assignment1 robot_launch.py
 ```
+- wait for launch to finish, then to start robot movement, run in another commandline window:
+```
+ros2 topic pub /start_robots std_msgs/msg/Bool "data: true"
+```
 
 ## Useful commands
 - Launch Keyboard teleoperation node (replace 'robot1' with 'robot2' for other robot)

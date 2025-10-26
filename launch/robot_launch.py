@@ -139,7 +139,7 @@ def generate_launch_description():
     ros2_control_params2 = _create_namespaced_params_file(ros2_control_params, 'robot2')
 
     # Remove diffdrive_controller prefix and set remappings based on ROS distro
-    use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy'])
+    use_twist_stamped = 'ROS_DISTRO' in os.environ and (os.environ['ROS_DISTRO'] in ['rolling', 'jazzy', 'kilted'])
     if use_twist_stamped:
         mappings = [
             ('diffdrive_controller/cmd_vel', 'cmd_vel'),
@@ -216,7 +216,7 @@ def generate_launch_description():
     )
     waiting_nodes2 = WaitForControllerConnection(
         target_driver=turtlebot_driver2,
-        nodes_to_start=ros_control_spawners2 + [controller_robot1] + [controller_robot2]
+        nodes_to_start=ros_control_spawners2
     )
 
     return LaunchDescription([
@@ -243,6 +243,9 @@ def generate_launch_description():
         turtlebot_driver2,
         waiting_nodes1,
         waiting_nodes2,
+        
+        controller_robot1,
+        controller_robot2,
 
         # This action will kill all nodes once the Webots simulation has exited
         launch.actions.RegisterEventHandler(

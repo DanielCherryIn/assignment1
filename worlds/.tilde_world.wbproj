@@ -4,6 +4,7 @@ simulationViewPerspectives: 000000ff000000010000000200000100000001a2010000000201
 sceneTreePerspectives: 000000ff00000001000000030000001d000002ad000000fa0100000002010000000200
 maximizedDockId: -1
 centralWidgetVisible: 1
-orthographicViewHeight: 1
+orthographicViewHeight: 3.52118
 textFiles: -1
+globalOptionalRendering: PenPaintingRays
 consoles: Console:All:All
