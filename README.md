@@ -22,7 +22,7 @@
 │   ├── robot_launch.py                 # Launches robots with custom controllers
 │   └── robot_launch_og.py              # Original or alternate launch file
 ├── resource                     # Resource and configuration files
-│   ├── assignment1/                     # Additional assignment-specific assets
+│   ├── assignment1/                 
 │   ├── ros2control.yml                  # ROS 2 control configuration
 │   ├── turtlebot1_webots.urdf          # TurtleBot 1 URDF model
 │   └── turtlebot2_webots.urdf          # TurtleBot 2 URDF model
