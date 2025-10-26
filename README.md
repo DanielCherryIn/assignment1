@@ -37,7 +37,7 @@ Group A1_Friday_30
 ```
 
 ## Requirements
-- Ros2 Kilted/Humble
+- Ros2 Kilted/Humble (other versions may work too)
 - Webots 2025
 - webots_ros2 package
 
@@ -49,7 +49,7 @@ Group A1_Friday_30
 ```
 colcon build
 source install/setup.bash
-
+```
 ## To start simulation
 ```
 ros2 launch assignment1 robot_launch.py
